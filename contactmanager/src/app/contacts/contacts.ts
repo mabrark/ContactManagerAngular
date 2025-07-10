@@ -48,26 +48,48 @@ export class Contacts implements OnInit {
   }
 
   addContact(f: NgForm) {
-    this.resetAlerts();
+  this.resetAlerts();
 
+  if (this.selectedFile) {
+    this.contact.imageName = this.selectedFile.name;
     this.uploadFile();
-
-    this.contactService.add(this.contact).subscribe(
-      (res: Contact) => {
-        this.contacts.push(res);
-        this.success = 'Successfully created';
-
-        f.reset();
-      },
-      (err) =>  (this.error = err.message)
-    );
+  } else {
+    this.contact.imageName = ''; // Let backend handle default placeholder
   }
 
-  editContact(firstName: any, lastName: any, emailAddress: any, phone: any, status: any, dob: any, imageName: any, typeID: any, contactID: any)
+  this.contactService.add(this.contact).subscribe(
+    (res: Contact) => {
+      this.contacts.push(res);
+      this.success = 'Successfully created';
+      f.reset();
+      this.selectedFile = null; // Clear file selection
+    },
+    (err) => (this.error = err.message)
+  );
+}
+
+
+  editContact(firstName: any, lastName: any, emailAddress: any, phone: any, contactID: any)
   {
     this.resetAlerts();
 
     console.log(firstName.value);
+    console.log(lastName.value);
+    console.log(emailAddress.value);
+    console.log(phone.value);
+    console.log(+contactID);
+    
+
+    this.contactService.edit({firstName: firstName.value, lastName: lastName.value, emailAddress: emailAddress.value, phone: phone.value, contactID: +contactID})
+      .subscribe(
+        (res) => {
+          this.cdr.detectChanges(); // <--- force UI update
+          this.success = 'Successfully edited';
+        },
+        (err) => (
+          this.error = err. message
+        )
+      );
   }
 
   deleteContact(contactID: number)
@@ -77,17 +99,16 @@ export class Contacts implements OnInit {
     this.contactService.delete(contactID)
       .subscribe(
         (res) => {
-          this.contacts = this.contacts.filter( function (item){
-
-            return item['contactID'] && +item['contactID'] !==+contactID;
+          this.contacts = this.contacts.filter( function (item) {
+            return item['contactID'] && +item['contactID'] !== +contactID;
           });
+          this.cdr.detectChanges(); // <--- force UI update
           this.success = "Deleted successfully";
         },
-        (err) => {
-          this.error = err.message
-        }
+          (err) => (
+            this.error = err.message
+          )
       );
-
   }
 
   uploadFile(): void {
