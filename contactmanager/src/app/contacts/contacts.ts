@@ -29,6 +29,7 @@ export class Contacts implements OnInit {
 
   ngOnInit(): void {
     this.getContacts();
+    this.cdr.detectChanges();
   }
 
   getContacts(): void {
@@ -53,6 +54,7 @@ export class Contacts implements OnInit {
   if (this.selectedFile) {
     this.contact.imageName = this.selectedFile.name;
     this.uploadFile();
+    this.cdr.detectChanges();
   } else {
     this.contact.imageName = ''; // Let backend handle default placeholder
   }
@@ -66,6 +68,7 @@ export class Contacts implements OnInit {
     },
     (err) => (this.error = err.message)
   );
+  this.cdr.detectChanges();
 }
 
 
@@ -92,24 +95,22 @@ export class Contacts implements OnInit {
       );
   }
 
-  deleteContact(contactID: number)
-  {
+  deleteContact(contactID: number): void {
+    const confirmed = window.confirm("Are you sure you want to delete this contact?");
+    if (!confirmed) return;
+
     this.resetAlerts();
 
-    this.contactService.delete(contactID)
-      .subscribe(
-        (res) => {
-          this.contacts = this.contacts.filter( function (item) {
-            return item['contactID'] && +item['contactID'] !== +contactID;
-          });
-          this.cdr.detectChanges(); // <--- force UI update
-          this.success = "Deleted successfully";
-        },
-          (err) => (
-            this.error = err.message
-          )
-      );
+    this.contactService.delete(contactID).subscribe({
+      next: () => {
+        this.contacts = this.contacts.filter(item => item.contactID && +item.contactID !== +contactID);
+        this.success = "Deleted successfully";
+        this.cdr.detectChanges(); // <--- force UI update
+      },
+      error: err => this.error = err.message
+    });
   }
+
 
   uploadFile(): void {
     if (!this.selectedFile)
@@ -124,6 +125,7 @@ export class Contacts implements OnInit {
       response => console.log('File uploaded successfully:', response),
       error => console.error('File upload failed:', error)
     );
+
   }
 
   onFileSelected(event: Event): void
